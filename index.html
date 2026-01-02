@@ -787,9 +787,10 @@
             }
         }
 
-       // SECTION 25: DUNGEON GENERATION - FIXED V13 (NO EMPTY ROOMS)
-       // ------------------------------------------------------------
-                
+        // ------------------------------------------------------------
+        // SECTION 25: DUNGEON GENERATION - V10.5 DISTANCE-BASED LOGIC RESTORED
+        // ------------------------------------------------------------
+        
         function generateDungeon() {
             const size = game.dungeon.size;
             const currentLevel = game.dungeon.currentLevel;
@@ -811,7 +812,7 @@
                     if (x === centerX && y === centerY) {
                         game.dungeon.grid[key] = { 
                             type: 'entrance', 
-                            description: getRandomDescription('entrance'),
+                            description: getRoomDescription('entrance'),
                             ...roomData
                         };
                     } 
@@ -829,7 +830,7 @@
                         
                         game.dungeon.grid[key] = {
                             type: 'boss',
-                            description: getRandomDescription('boss'),
+                            description: 'A massive throne room pulses with dark energy. The boss of this level awaits!',
                             ...roomData,
                             hasChest: true,
                             hasEnemy: true,
@@ -840,7 +841,7 @@
                     else if (x === size - 1 && y === size - 2) { 
                         game.dungeon.grid[key] = { 
                             type: 'stairs', 
-                            description: getRandomDescription('stairs'),
+                            description: getRoomDescription('stairs'),
                             ...roomData 
                         };
                     } 
@@ -856,7 +857,7 @@
                         if (Math.random() < 0.1) {
                             game.dungeon.grid[key] = {
                                 type: 'merchant',
-                                description: getRandomDescription('merchant'),
+                                description: getRoomDescription('merchant'),
                                 ...roomData
                             };
                             continue;
@@ -865,7 +866,7 @@
                         // FAR FROM CENTER (distance >= 7): Hardest enemies
                         if (distanceFromCenter >= 7) {
                             if (roll < 0.5) {
-                                roomType = 'enemy';
+                                roomType = 'monster';
                                 if (currentLevel >= 20) {
                                     if (Math.random() < 0.4) {
                                         enemyType = 'harbingerOfRagnarok';
@@ -901,14 +902,14 @@
                             } else if (roll < 0.8) {
                                 roomType = 'fountain';
                             } else {
-                                roomType = 'crypt';
+                                roomType = 'library';
                                 roomData.hasChest = Math.random() < 0.3;
                             }
                         } 
                         // MEDIUM DISTANCE (4 <= distance < 7): Medium difficulty
                         else if (distanceFromCenter >= 4) {
                             if (roll < 0.45) {
-                                roomType = 'enemy';
+                                roomType = 'monster';
                                 if (currentLevel >= 20) {
                                     if (Math.random() < 0.3) {
                                         enemyType = 'cosmicHorror';
@@ -944,7 +945,7 @@
                                 roomType = 'treasure';
                                 roomData.hasChest = true;
                             } else if (roll < 0.75) {
-                                roomType = 'trap';
+                                roomType = 'shrine';
                             } else if (roll < 0.8) {
                                 roomType = 'fountain';
                             } else {
@@ -955,7 +956,7 @@
                         // NEAR CENTER (distance < 4): Easiest enemies
                         else {
                             if (roll < 0.35) {
-                                roomType = 'enemy';
+                                roomType = 'monster';
                                 if (isElite) {
                                     enemyType = 'orcChieftain';
                                 } else if (currentLevel >= 2) {
@@ -975,14 +976,14 @@
                         }
                         
                         // Create enemy room with scaled enemy
-                        if (roomType === 'enemy') {
+                        if (roomType === 'monster' && enemyType) {
                             let scaledEnemy = scaleEnemyForLevel(enemies[enemyType], currentLevel);
                             
                             // 20% chance for double enemy encounter (level 3+)
                             if (currentLevel >= 3 && Math.random() < 0.2) {
                                 game.dungeon.grid[key] = {
-                                    type: 'enemy',
-                                    description: getRandomDescription('enemy') + ' Two creatures lurk here!',
+                                    type: 'monster',
+                                    description: getRoomDescription('monster') + ' Two creatures lurk here!',
                                     ...roomData,
                                     hasEnemy: true,
                                     enemy: scaledEnemy,
@@ -990,17 +991,18 @@
                                 };
                             } else {
                                 game.dungeon.grid[key] = {
-                                    type: 'enemy',
-                                    description: getRandomDescription('enemy'),
+                                    type: 'monster',
+                                    description: getRoomDescription('monster'),
                                     ...roomData,
                                     hasEnemy: true,
                                     enemy: scaledEnemy
                                 };
                             }
                         } else {
+                            // Non-enemy rooms
                             game.dungeon.grid[key] = {
                                 type: roomType,
-                                description: getRandomDescription(roomType),
+                                description: getRoomDescription(roomType),
                                 ...roomData
                             };
                         }
@@ -4052,6 +4054,7 @@
     </script>
 </body>
 </html>
+
 
 
 
