@@ -787,131 +787,237 @@
             }
         }
 
-                // SECTION 25: DUNGEON GENERATION - FIXED V13 (NO EMPTY ROOMS)
-        // ------------------------------------------------------------
-        
+       // SECTION 25: DUNGEON GENERATION - FIXED V13 (NO EMPTY ROOMS)
+       // ------------------------------------------------------------
+                
         function generateDungeon() {
-            game.dungeon.grid = {};
             const size = game.dungeon.size;
-            const center = Math.floor(size / 2);
+            const currentLevel = game.dungeon.currentLevel;
+            game.dungeon.grid = {};
             
-            // Start position
-            game.player.position = { x: center, y: center };
+            const centerX = 6; 
+            const centerY = 6;
             
-            // Room types - NO EMPTY ROOMS! Every room has content
-            const roomTypes = [
-                'monster', 'monster', 'monster', 'monster', 'monster',  // 50% combat
-                'treasure', 'treasure', 'treasure',                     // 30% treasure
-                'merchant',                                             // 10% merchant
-                'shrine',                                               // 5% shrine
-                'library',                                              // 5% library
-                'fountain'                                              // 5% fountain
-            ];
-            
-            // Generate rooms - every room has something!
             for (let x = 0; x < size; x++) {
                 for (let y = 0; y < size; y++) {
                     const key = `${x},${y}`;
+                    const distanceX = Math.abs(x - centerX);
+                    const distanceY = Math.abs(y - centerY);
+                    const distanceFromCenter = distanceX + distanceY;
                     
-                    if (x === center && y === center) {
-                        // Entrance room - always has treasure chest
+                    let roomData = { visited: false, searched: false, hasChest: false, fountainUsed: false, hasEnemy: false };
+
+                    // ENTRANCE: Center of dungeon (6,6)
+                    if (x === centerX && y === centerY) {
+                        game.dungeon.grid[key] = { 
+                            type: 'entrance', 
+                            description: getRandomDescription('entrance'),
+                            ...roomData
+                        };
+                    } 
+                    // BOSS: Far corner (11,11)
+                    else if (x === size - 1 && y === size - 1) { 
+                        let bossEnemy = null;
+                        
+                        if (currentLevel >= 20) {
+                            bossEnemy = scaleEnemyForLevel(enemies.apocalypseTitan, currentLevel);
+                        } else if (currentLevel >= 10) {
+                            bossEnemy = scaleEnemyForLevel(enemies.voidEmperor, currentLevel);
+                        } else {
+                            bossEnemy = scaleEnemyForLevel(enemies.dragon, currentLevel);
+                        }
+                        
                         game.dungeon.grid[key] = {
-                            type: 'entrance',
-                            searched: false,
+                            type: 'boss',
+                            description: getRandomDescription('boss'),
+                            ...roomData,
                             hasChest: true,
-                            hasEnemy: false,
-                            description: 'The entrance to this dungeon level. A welcoming chest awaits!'
+                            hasEnemy: true,
+                            enemy: bossEnemy
                         };
-                    } else {
-                        const type = roomTypes[Math.floor(Math.random() * roomTypes.length)];
-                        game.dungeon.grid[key] = {
-                            type: type,
-                            searched: false,
-                            // Treasure rooms always have chests, others have 40% chance
-                            hasChest: type === 'treasure' || Math.random() < 0.4,
-                            hasEnemy: type === 'monster',
-                            description: getRoomDescription(type)
+                    } 
+                    // STAIRS: Next to boss room (11,10)
+                    else if (x === size - 1 && y === size - 2) { 
+                        game.dungeon.grid[key] = { 
+                            type: 'stairs', 
+                            description: getRandomDescription('stairs'),
+                            ...roomData 
                         };
+                    } 
+                    // REGULAR ROOMS: Distance-based difficulty scaling
+                    else {
+                        let roomType = null;
+                        let enemyType = null;
+                        
+                        const roll = Math.random();
+                        const isElite = currentLevel >= 2 && Math.random() < 0.15;
+                        
+                        // 10% chance for merchant anywhere
+                        if (Math.random() < 0.1) {
+                            game.dungeon.grid[key] = {
+                                type: 'merchant',
+                                description: getRandomDescription('merchant'),
+                                ...roomData
+                            };
+                            continue;
+                        }
+                        
+                        // FAR FROM CENTER (distance >= 7): Hardest enemies
+                        if (distanceFromCenter >= 7) {
+                            if (roll < 0.5) {
+                                roomType = 'enemy';
+                                if (currentLevel >= 20) {
+                                    if (Math.random() < 0.4) {
+                                        enemyType = 'harbingerOfRagnarok';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'voidBeast' : 'titanLord';
+                                    }
+                                } else if (currentLevel >= 10) {
+                                    if (Math.random() < 0.4) {
+                                        enemyType = Math.random() < 0.5 ? 'cosmicHorror' : 'titanLord';
+                                    } else if (isElite) {
+                                        enemyType = 'demonLord';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'ancientDragon' : 'voidBeast';
+                                    }
+                                } else if (currentLevel >= 5) {
+                                    if (Math.random() < 0.4) {
+                                        enemyType = Math.random() < 0.5 ? 'hydra' : 'phoenixGuardian';
+                                    } else if (isElite) {
+                                        enemyType = 'archDemon';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'demon' : 'vampire';
+                                    }
+                                } else if (isElite) {
+                                    enemyType = currentLevel >= 3 ? 'archDemon' : 'elderTroll';
+                                } else if (currentLevel >= 3) {
+                                    enemyType = Math.random() < 0.5 ? 'demon' : 'vampire';
+                                } else {
+                                    enemyType = Math.random() < 0.5 ? 'troll' : 'wraith';
+                                }
+                            } else if (roll < 0.7) {
+                                roomType = 'treasure';
+                                roomData.hasChest = true;
+                            } else if (roll < 0.8) {
+                                roomType = 'fountain';
+                            } else {
+                                roomType = 'crypt';
+                                roomData.hasChest = Math.random() < 0.3;
+                            }
+                        } 
+                        // MEDIUM DISTANCE (4 <= distance < 7): Medium difficulty
+                        else if (distanceFromCenter >= 4) {
+                            if (roll < 0.45) {
+                                roomType = 'enemy';
+                                if (currentLevel >= 20) {
+                                    if (Math.random() < 0.3) {
+                                        enemyType = 'cosmicHorror';
+                                    } else if (isElite) {
+                                        enemyType = 'voidBeast';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'demonLord' : 'ancientDragon';
+                                    }
+                                } else if (currentLevel >= 10) {
+                                    if (Math.random() < 0.3) {
+                                        enemyType = 'voidBeast';
+                                    } else if (isElite) {
+                                        enemyType = 'ancientDragon';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'demonLord' : 'lichKing';
+                                    }
+                                } else if (currentLevel >= 5) {
+                                    if (Math.random() < 0.3) {
+                                        enemyType = 'lichKing';
+                                    } else if (isElite) {
+                                        enemyType = 'elderTroll';
+                                    } else {
+                                        enemyType = Math.random() < 0.5 ? 'wraith' : 'troll';
+                                    }
+                                } else if (isElite) {
+                                    enemyType = currentLevel >= 2 ? 'ancientWraith' : 'orcChieftain';
+                                } else if (currentLevel >= 2) {
+                                    enemyType = Math.random() < 0.5 ? 'wraith' : 'troll';
+                                } else {
+                                    enemyType = Math.random() < 0.6 ? 'orc' : 'skeleton';
+                                }
+                            } else if (roll < 0.65) {
+                                roomType = 'treasure';
+                                roomData.hasChest = true;
+                            } else if (roll < 0.75) {
+                                roomType = 'trap';
+                            } else if (roll < 0.8) {
+                                roomType = 'fountain';
+                            } else {
+                                roomType = 'empty';
+                                roomData.hasChest = Math.random() < 0.2;
+                            }
+                        } 
+                        // NEAR CENTER (distance < 4): Easiest enemies
+                        else {
+                            if (roll < 0.35) {
+                                roomType = 'enemy';
+                                if (isElite) {
+                                    enemyType = 'orcChieftain';
+                                } else if (currentLevel >= 2) {
+                                    enemyType = Math.random() < 0.5 ? 'orc' : 'skeleton';
+                                } else {
+                                    enemyType = 'goblin';
+                                }
+                            } else if (roll < 0.55) {
+                                roomType = 'treasure';
+                                roomData.hasChest = true;
+                            } else if (roll < 0.6) {
+                                roomType = 'fountain';
+                            } else {
+                                roomType = 'empty';
+                                roomData.hasChest = Math.random() < 0.15;
+                            }
+                        }
+                        
+                        // Create enemy room with scaled enemy
+                        if (roomType === 'enemy') {
+                            let scaledEnemy = scaleEnemyForLevel(enemies[enemyType], currentLevel);
+                            
+                            // 20% chance for double enemy encounter (level 3+)
+                            if (currentLevel >= 3 && Math.random() < 0.2) {
+                                game.dungeon.grid[key] = {
+                                    type: 'enemy',
+                                    description: getRandomDescription('enemy') + ' Two creatures lurk here!',
+                                    ...roomData,
+                                    hasEnemy: true,
+                                    enemy: scaledEnemy,
+                                    secondEnemy: scaleEnemyForLevel(enemies[enemyType], currentLevel)
+                                };
+                            } else {
+                                game.dungeon.grid[key] = {
+                                    type: 'enemy',
+                                    description: getRandomDescription('enemy'),
+                                    ...roomData,
+                                    hasEnemy: true,
+                                    enemy: scaledEnemy
+                                };
+                            }
+                        } else {
+                            game.dungeon.grid[key] = {
+                                type: roomType,
+                                description: getRandomDescription(roomType),
+                                ...roomData
+                            };
+                        }
                     }
                 }
             }
             
-            // Add stairs down - always in a room with an enemy guarding it
-            const stairX = Math.floor(Math.random() * size);
-            const stairY = Math.floor(Math.random() * size);
-            const stairKey = `${stairX},${stairY}`;
-            if (stairKey !== `${center},${center}`) {
-                game.dungeon.grid[stairKey].type = 'stairs';
-                game.dungeon.grid[stairKey].hasEnemy = true; // Stairs always guarded!
-                game.dungeon.grid[stairKey].hasChest = true; // And have treasure!
-                game.dungeon.grid[stairKey].description = 'Stone stairs descend into darkness. A guardian blocks your path, protecting a treasure chest!';
-            }
-            
-            // Add secret room (30% chance) - always treasure-filled
+            // 30% chance for secret room
             if (Math.random() < 0.3) {
-                const secretX = Math.floor(Math.random() * size);
-                const secretY = Math.floor(Math.random() * size);
-                const secretKey = `${secretX},${secretY}`;
-                game.dungeon.secretRoom = { x: secretX, y: secretY };
                 game.dungeon.hasSecretRoom = true;
-                game.dungeon.grid[secretKey].isSecret = true;
-                game.dungeon.grid[secretKey].hasChest = true;
-                game.dungeon.grid[secretKey].hasEnemy = false; // Secret rooms are safe
-                game.dungeon.grid[secretKey].description = 'A hidden room filled with ancient treasures and magical artifacts!';
             }
             
-            // Set current room
-            const startKey = `${center},${center}`;
-            game.currentRoom = game.dungeon.grid[startKey];
+            // Set starting position at center
+            game.player.position = { x: 6, y: 6 };
+            const key = `${game.player.position.x},${game.player.position.y}`;
+            game.currentRoom = game.dungeon.grid[key];
         }
-
-        function getRoomDescription(type) {
-            const descriptions = {
-                monster: [
-                    'You sense danger lurking here. The sound of claws scraping stone fills the air.',
-                    'The air is thick with menace. Something evil dwells in this place.',
-                    'Something monstrous awaits in the shadows. Steel yourself for battle!',
-                    'Growls echo from the darkness. A creature prowls this chamber.'
-                ],
-                treasure: [
-                    'You notice a glint of gold in the corner. Riches await!',
-                    'An ornate chest sits against the wall, practically begging to be opened.',
-                    'Treasures await the bold. This room is filled with promise.',
-                    'The smell of ancient coins fills this chamber. Fortune favors you!'
-                ],
-                merchant: [
-                    'A mysterious merchant has set up shop here, wares gleaming in the torchlight.',
-                    'You hear the jingle of coins. A traveling trader offers their finest goods.',
-                    'A cloaked merchant beckons. Rare items are for sale!'
-                ],
-                shrine: [
-                    'A sacred shrine emanates divine energy. The gods watch over this place.',
-                    'An altar glows with holy light. Blessings await the faithful.',
-                    'Divine power radiates from this sacred chamber. Pray for fortune!'
-                ],
-                library: [
-                    'Ancient books line dusty shelves. Knowledge and power await within these tomes.',
-                    'Forgotten scrolls and grimoires rest here. Learn their secrets!',
-                    'A library of arcane knowledge. Ability books wait to be discovered.'
-                ],
-                fountain: [
-                    'A magical fountain bubbles with healing waters. Crystal clear and inviting.',
-                    'Restorative waters flow from an ancient font. Drink and be renewed!',
-                    'The fountain\'s waters shimmer with restorative magic. Healing awaits!'
-                ],
-                stairs: [
-                    'Stone stairs lead deeper into the dungeon. The next level beckons!',
-                    'A dark staircase descends below. What dangers await in the depths?'
-                ],
-                entrance: [
-                    'The entrance to this dungeon level. Your adventure continues!'
-                ]
-            };
-            
-            const list = descriptions[type] || descriptions.monster;
-            return list[Math.floor(Math.random() * list.length)];
-        }
-
         // ------------------------------------------------------------
         // SECTION 26: ROOM DESCRIPTION AND EXPLORATION
         // ------------------------------------------------------------
@@ -3946,5 +4052,6 @@
     </script>
 </body>
 </html>
+
 
 
