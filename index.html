@@ -2461,7 +2461,7 @@
             speakSequence(messages);
         }
 
-                // SECTION 51: MERCHANT SYSTEM - FIXED V13 (AUTO-EQUIP)
+        // SECTION 51: MERCHANT SYSTEM - FIXED V13 (AUTO-EQUIP)
         // ------------------------------------------------------------
         
         function talkToMerchant() {
@@ -3095,8 +3095,8 @@
                 speak('Error saving game. Storage may be full.');
             }
        } 
-         // ------------------------------------------------------------
-        // SECTION 65: LOAD GAME SYSTEM
+        // ------------------------------------------------------------
+        // SECTION 65: LOAD GAME SYSTEM (FIXED - V13)
         // ------------------------------------------------------------
         
         function loadGame(command) {
@@ -3124,16 +3124,22 @@
             // Clean up character name
             characterName = characterName.replace(/[^a-zA-Z0-9\s]/g, '').trim().toLowerCase();
             
+            console.log(`Attempting to load character: "${characterName}"`);
+            
             try {
                 const saveKey = `echoDungeon_char_${characterName}`;
                 const saveDataStr = localStorage.getItem(saveKey);
                 
+                console.log(`Save key: ${saveKey}`);
+                console.log(`Save data found: ${saveDataStr ? 'yes' : 'no'}`);
+                
                 if (!saveDataStr) {
-                    speak(`No saved character named ${characterName} found. Say the character name exactly as you saved it, or start a new game.`);
+                    speak(`No saved character named ${characterName} found. Say the character name exactly as you saved it, or say my characters to see available saves.`);
                     return;
                 }
                 
                 const data = JSON.parse(saveDataStr);
+                console.log('Save data parsed successfully');
                 
                 // Restore ALL player data fields explicitly
                 game.player.name = data.player.name;
@@ -3166,6 +3172,8 @@
                 game.player.activeEffects = data.player.activeEffects || [];
                 game.player.junkBag = data.player.junkBag || [];
                 
+                console.log('Basic player data restored');
+                
                 // V13 NEW attributes
                 game.player.strength = data.player.strength || 10;
                 game.player.dexterity = data.player.dexterity || 10;
@@ -3173,6 +3181,8 @@
                 game.player.critChance = data.player.critChance || 0;
                 game.player.dodgeChance = data.player.dodgeChance || 0;
                 game.player.unspentAttributePoints = data.player.unspentAttributePoints || 0;
+                
+                console.log('Attributes restored');
                 
                 // Multipliers (floor scaling)
                 game.player.damageMultiplier = data.player.damageMultiplier || 1;
@@ -3185,15 +3195,21 @@
                 game.dungeon.currentLevel = data.dungeon.currentLevel;
                 game.dungeon.hasSecretRoom = data.dungeon.hasSecretRoom || false;
                 
+                console.log('Dungeon data restored');
+                
                 // Set current room
                 const key = `${game.player.position.x},${game.player.position.y}`;
                 game.currentRoom = game.dungeon.grid[key];
                 
-                // Recalculate derived stats (crit, dodge) based on loaded attributes
-                calculateDerivedStats();
+                console.log('Current room set');
                 
-                // Recalculate defense based on loaded equipment
+                // CRITICAL: Recalculate derived stats (crit, dodge, max HP/mana)
+                calculateDerivedStats();
+                console.log('Derived stats calculated');
+                
+                // CRITICAL: Recalculate defense based on loaded equipment
                 recalculateDefense();
+                console.log('Defense recalculated');
                 
                 // Update game state flags
                 game.initialized = true;
@@ -3204,15 +3220,22 @@
                 game.phase = 'exploration';
                 micButton.classList.remove('start-button');
                 
+                console.log('Game state updated, preparing welcome message');
+                
                 // Welcome back message
-                const pronounObj = getPronoun(game.player.gender);
                 speak(`Welcome back, ${game.player.name}! Level ${game.player.level} ${classes[game.player.class].name} on dungeon level ${game.dungeon.currentLevel}. Health ${game.player.health}, Mana ${game.player.mana}, Gold ${game.player.gold}.`, () => {
-                    setTimeout(() => describeRoom(), 1000);
+                    setTimeout(() => {
+                        console.log('Calling describeRoom');
+                        describeRoom();
+                    }, 1000);
                 });
                 
+                console.log('Load game completed successfully');
+                
             } catch (e) {
-                console.error('Load error:', e);
-                speak('Error loading game. Save file may be corrupted or incompatible with this version.');
+                console.error('Load game error:', e);
+                console.error('Error stack:', e.stack);
+                speak(`Error loading game: ${e.message}. Save file may be corrupted or incompatible with this version.`);
             }
         }
 
@@ -3923,4 +3946,5 @@
     </script>
 </body>
 </html>
+
 
