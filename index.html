@@ -2898,25 +2898,24 @@
             }
         }
               
-        // ------------------------------------------------------------
-        // SECTION 62: CHARACTER CREATION - RACE SELECTION
+        // SECTION 62: CHARACTER CREATION - RACE SELECTION (FIXED)
         // ------------------------------------------------------------
         
         function selectRace(command) {
             let selectedRace = null;
             
-            if (command.includes('human')) {
+            if (command.includes('human') || command.includes('man')) {
                 selectedRace = 'human';
-            } else if (command.includes('elf')) {
+            } else if (command.includes('elf') || command.includes('elves')) {
                 selectedRace = 'elf';
-            } else if (command.includes('dwarf')) {
+            } else if (command.includes('dwarf') || command.includes('dwarves')) {
                 selectedRace = 'dwarf';
-            } else if (command.includes('orc')) {
+            } else if (command.includes('orc') || command.includes('ork')) {
                 selectedRace = 'orc';
-            } else if (command.includes('halfling')) {
+            } else if (command.includes('halfling') || command.includes('hobbit') || command.includes('half')) {
                 selectedRace = 'halfling';
             } else {
-                speak('Please choose human, elf, dwarf, orc, or halfling.');
+                speak('Please choose: human, elf, dwarf, orc, or halfling.');
                 return;
             }
             
@@ -2947,7 +2946,6 @@
             game.needsRace = false;
             game.needsClass = true;
         }
-
         // ------------------------------------------------------------
         // SECTION 63: CHARACTER CREATION - CLASS SELECTION (V13)
         // ------------------------------------------------------------
@@ -3890,5 +3888,6 @@
     </script>
 </body>
 </html>
+
 
 
