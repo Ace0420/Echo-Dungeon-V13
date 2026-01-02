@@ -548,7 +548,7 @@
             { name: 'Amulet of Power', stat: 'attack', value: 25, price: 3000, minLevel: 12 }
         ];
 
-                // SECTION 17: ABILITY/SPELL DATA (FIXED - ARCANE MISSILES)
+        // SECTION 17: ABILITY/SPELL DATA (FIXED - ARCANE MISSILES)
         // ------------------------------------------------------------
         
         const abilities = [
@@ -632,23 +632,75 @@
         ];
 
         // ------------------------------------------------------------
-        // SECTION 21: ENEMY DATA
+        // SECTION 21: ENEMY DEFINITIONS (V10.5 STRUCTURE RESTORED)
         // ------------------------------------------------------------
         
-        const enemies = [
-            { name: 'Giant Rat', health: 30, attack: 8, exp: 20, gold: 10, level: 1 },
-            { name: 'Goblin', health: 45, attack: 12, exp: 35, gold: 15, level: 1 },
-            { name: 'Skeleton', health: 60, attack: 15, exp: 50, gold: 25, level: 2 },
-            { name: 'Zombie', health: 80, attack: 18, exp: 70, gold: 30, level: 3 },
-            { name: 'Orc Warrior', health: 100, attack: 22, exp: 100, gold: 50, level: 4 },
-            { name: 'Dark Mage', health: 90, attack: 28, exp: 120, gold: 60, level: 5 },
-            { name: 'Troll', health: 150, attack: 30, exp: 150, gold: 75, level: 6 },
-            { name: 'Vampire', health: 120, attack: 35, exp: 180, gold: 100, level: 7 },
-            { name: 'Demon', health: 200, attack: 40, exp: 250, gold: 150, level: 8 },
-            { name: 'Dragon', health: 300, attack: 50, exp: 400, gold: 300, level: 10 },
-            { name: 'Ancient Dragon', health: 500, attack: 70, exp: 800, gold: 600, level: 15 },
-            { name: 'Void Beast', health: 800, attack: 90, exp: 1500, gold: 1000, level: 20 }
-        ];
+        const enemies = {
+            // TIER 1: Levels 1-2 (Near center, easy)
+            goblin: { name: 'Goblin', health: 45, attack: 12, exp: 35, gold: 15 },
+            skeleton: { name: 'Skeleton', health: 60, attack: 15, exp: 50, gold: 25 },
+            orc: { name: 'Orc', health: 100, attack: 22, exp: 100, gold: 50 },
+            
+            // TIER 1.5: Elite variants
+            orcChieftain: { name: 'Orc Chieftain', health: 120, attack: 28, exp: 120, gold: 60 },
+            
+            // TIER 2: Levels 2-4 (Medium distance)
+            wraith: { name: 'Wraith', health: 90, attack: 25, exp: 110, gold: 55 },
+            troll: { name: 'Troll', health: 150, attack: 30, exp: 150, gold: 75, regenerate: 5 },
+            ancientWraith: { name: 'Ancient Wraith', health: 140, attack: 35, exp: 180, gold: 90 },
+            elderTroll: { name: 'Elder Troll', health: 200, attack: 38, exp: 200, gold: 100, regenerate: 10 },
+            
+            // TIER 3: Levels 5-9 (Far distance, hard)
+            demon: { name: 'Demon', health: 200, attack: 40, exp: 250, gold: 150 },
+            vampire: { name: 'Vampire', health: 180, attack: 45, exp: 280, gold: 175, regenerate: 8 },
+            archDemon: { name: 'Arch Demon', health: 280, attack: 50, exp: 350, gold: 225 },
+            hydra: { name: 'Hydra', health: 320, attack: 55, exp: 400, gold: 275, regenerate: 12 },
+            phoenixGuardian: { name: 'Phoenix Guardian', health: 350, attack: 60, exp: 450, gold: 300, regenerate: 15 },
+            
+            // TIER 4: Levels 10-19 (Endgame)
+            lichKing: { name: 'Lich King', health: 400, attack: 65, exp: 600, gold: 400, regenerate: 10 },
+            ancientDragon: { name: 'Ancient Dragon', health: 500, attack: 70, exp: 800, gold: 600, regenerate: 20 },
+            demonLord: { name: 'Demon Lord', health: 550, attack: 80, exp: 900, gold: 700, regenerate: 25 },
+            voidBeast: { name: 'Void Beast', health: 700, attack: 90, exp: 1200, gold: 900, regenerate: 30 },
+            
+            // TIER 5: Levels 20+ (Apocalypse)
+            cosmicHorror: { name: 'Cosmic Horror', health: 800, attack: 100, exp: 1500, gold: 1100, regenerate: 35 },
+            titanLord: { name: 'Titan Lord', health: 1000, attack: 120, exp: 2000, gold: 1500, regenerate: 40 },
+            harbingerOfRagnarok: { name: 'Harbinger of Ragnarok', health: 1500, attack: 150, exp: 3000, gold: 2500, regenerate: 50 },
+            
+            // BOSSES
+            dragon: { name: 'Dragon', health: 300, attack: 50, exp: 400, gold: 300, isBoss: true },
+            voidEmperor: { name: 'Void Emperor', health: 2000, attack: 180, exp: 5000, gold: 4000, regenerate: 60, isBoss: true },
+            apocalypseTitan: { name: 'Apocalypse Titan', health: 3000, attack: 250, exp: 10000, gold: 8000, regenerate: 75, isBoss: true }
+        };
+
+        // Helper function to scale enemy stats by dungeon level
+        function scaleEnemyForLevel(baseEnemy, level) {
+            if (!baseEnemy) {
+                console.error('scaleEnemyForLevel: baseEnemy is undefined!');
+                return { name: 'Unknown Enemy', health: 50, attack: 10, exp: 10, gold: 5 };
+            }
+            
+            const scaleFactor = 1 + ((level - 1) * 0.15);
+            
+            return {
+                name: baseEnemy.name,
+                health: Math.floor(baseEnemy.health * scaleFactor),
+                maxHealth: Math.floor(baseEnemy.health * scaleFactor),
+                attack: Math.floor(baseEnemy.attack * scaleFactor),
+                exp: Math.floor(baseEnemy.exp * scaleFactor),
+                gold: Math.floor(baseEnemy.gold * scaleFactor),
+                regenerate: baseEnemy.regenerate ? Math.floor(baseEnemy.regenerate * scaleFactor) : 0,
+                isBoss: baseEnemy.isBoss || false,
+                // Combat status effects
+                stunned: false,
+                frozen: false,
+                poisoned: false,
+                poisonDamage: 0,
+                deathMarked: false
+            };
+        }
+
 
         // ------------------------------------------------------------
         // SECTION 22: GAME INFO (README & TIPS)
@@ -4054,6 +4106,7 @@
     </script>
 </body>
 </html>
+
 
 
 
