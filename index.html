@@ -2873,73 +2873,75 @@
             speakSequence(messages);
         }
        
-         // SECTION 61: CHARACTER CREATION - GENDER SELECTION (FIXED)
+        // SECTION 61: CHARACTER CREATION - GENDER SELECTION (SIMPLIFIED)
         // ------------------------------------------------------------
         
         function selectGender(command) {
-            // More flexible matching
-            if (command.includes('dude') || command.includes('male') || command.includes('guy')) {
+            // Simple matching - just check for key words
+            if (command.includes('mail') || command.includes('dude')) {
                 game.player.gender = 'male';
-                speak('You have chosen male pronouns. Now choose your race: human, elf, dwarf, orc, or halfling.');
+                speak('Male. Now choose your race: human, elf, dwarf, orc, or halfling.');
                 game.needsGender = false;
                 game.needsRace = true;
-            } else if (command.includes('female') || command.includes('girl') || command.includes('chick')) {
+            } else if (command.includes('female')) {
                 game.player.gender = 'female';
-                speak('You have chosen female pronouns. Now choose your race: human, elf, dwarf, orc, or halfling.');
+                speak('Female. Now choose your race: human, elf, dwarf, orc, or halfling.');
                 game.needsGender = false;
                 game.needsRace = true;
-            } else if (command.includes('non') || command.includes('binary') || command.includes('they') || command.includes('them')) {
-                game.player.gender = 'nonbinary';
-                speak('You have chosen non-binary pronouns. Now choose your race: human, elf, dwarf, orc, or halfling.');
-                game.needsGender = false;
-                game.needsRace = true;
-            } else {
-                speak('Please choose: male, female, or non-binary.');
-            }
+            } 
         }
-              
-        // SECTION 62: CHARACTER CREATION - RACE SELECTION (FIXED)
+
+        // ------------------------------------------------------------
+        // SECTION 62: CHARACTER CREATION - RACE SELECTION (FIXED ORC)
         // ------------------------------------------------------------
         
         function selectRace(command) {
             let selectedRace = null;
             
-            if (command.includes('human') || command.includes('man')) {
-                selectedRace = 'human';
-            } else if (command.includes('elf') || command.includes('elves')) {
-                selectedRace = 'elf';
-            } else if (command.includes('dwarf') || command.includes('dwarves')) {
-                selectedRace = 'dwarf';
-            } else if (command.includes('orc') || command.includes('ork')) {
+            // Check orc FIRST before other checks
+            const lowerCommand = command.toLowerCase().trim();
+            
+            if (lowerCommand === 'orc' || lowerCommand === 'ork' || lowerCommand.includes('orc')) {
                 selectedRace = 'orc';
-            } else if (command.includes('halfling') || command.includes('hobbit') || command.includes('half')) {
+            } else if (lowerCommand.includes('human')) {
+                selectedRace = 'human';
+            } else if (lowerCommand.includes('elf')) {
+                selectedRace = 'elf';
+            } else if (lowerCommand.includes('dwarf')) {
+                selectedRace = 'dwarf';
+            } else if (lowerCommand.includes('half') || lowerCommand.includes('ling')) {
                 selectedRace = 'halfling';
             } else {
-                speak('Please choose: human, elf, dwarf, orc, or halfling.');
+                speak('Say your race: human, elf, dwarf, orc, or halfling.');
                 return;
             }
             
             game.player.race = selectedRace;
             const raceData = races[selectedRace];
             
-            let messages = [`You have chosen the ${raceData.name} race. ${raceData.description}.`];
+            let messages = [`${raceData.name} chosen. ${raceData.description}.`];
             
-            // Describe bonuses
+            // Only mention non-zero bonuses
+            const bonuses = [];
             if (raceData.bonuses.strength !== 0) {
-                messages.push(`Strength bonus: ${raceData.bonuses.strength > 0 ? '+' : ''}${raceData.bonuses.strength}.`);
+                bonuses.push(`Strength ${raceData.bonuses.strength > 0 ? '+' : ''}${raceData.bonuses.strength}`);
             }
             if (raceData.bonuses.dexterity !== 0) {
-                messages.push(`Dexterity bonus: ${raceData.bonuses.dexterity > 0 ? '+' : ''}${raceData.bonuses.dexterity}.`);
+                bonuses.push(`Dexterity ${raceData.bonuses.dexterity > 0 ? '+' : ''}${raceData.bonuses.dexterity}`);
             }
             if (raceData.bonuses.wisdom !== 0) {
-                messages.push(`Wisdom bonus: ${raceData.bonuses.wisdom > 0 ? '+' : ''}${raceData.bonuses.wisdom}.`);
+                bonuses.push(`Wisdom ${raceData.bonuses.wisdom > 0 ? '+' : ''}${raceData.bonuses.wisdom}`);
+            }
+            
+            if (bonuses.length > 0) {
+                messages.push(bonuses.join(', ') + '.');
             }
             
             if (selectedRace === 'halfling') {
-                messages.push('Halfling special: Lucky Break! You have an extra 15% chance to dodge attacks.');
+                messages.push('Lucky Break: plus 15% dodge chance.');
             }
             
-            messages.push('Now choose your class: warrior, mage, or rogue.');
+            messages.push('Choose your class: warrior, mage, or rogue.');
             
             speakSequence(messages);
             
@@ -3888,6 +3890,7 @@
     </script>
 </body>
 </html>
+
 
 
 
